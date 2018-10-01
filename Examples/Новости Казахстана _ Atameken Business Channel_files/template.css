@@ -1,0 +1,149 @@
+.charity-fees-name a{
+	color:#000;
+}
+
+
+.last_group_header i{
+	position: relative;
+	float:left;
+}
+
+.last_group_header h4{
+	position: relative;
+	float:left;
+	margin-top: 0px;
+	padding-top: 0px;
+	margin-left: 10px;
+	top:-1px;
+}
+
+.last_group ul{
+	margin-left: 0px;
+	padding-left: 0px;
+}
+
+.last_group ul li{
+	list-style: none;
+	padding: 5px 0px 5px 0px;
+}
+
+.last_group ul li a{margin-left: 10px;}
+
+.category-news-header a{
+	color:#14191d;
+}
+
+.category-header-title  a{
+	color:#fff;
+}
+.actual_theme{
+	
+	border: 1px solid #eee;
+}
+
+.actual_right_border{
+	position: relative;
+	float: right;
+}
+
+.actual_theme_body .side-title{
+	padding-bottom: 20px;
+	text-align: center;
+}
+.actual_ul{
+	
+}
+.actual_ul li img{
+	padding-bottom: 20px;
+}
+
+.actual_ul li{
+	list-style: none;
+	padding: 5px 0px 5px 5px;
+}
+
+.actual_ul li a{
+	color: #333;
+	padding-left: 5px;
+}
+.main-header .container .online-player{
+	text-align:center;
+	width:190px;
+	position:absolute;
+	right:15px;
+	top:0;
+	bottom:-35px;
+}
+.info-post i{
+	margin-right: 8px;
+    position: relative;
+    top: -1px;
+}
+
+.tv-schedule-tab-content .list{
+	overflow-y: scroll;
+	max-height: 800px;
+}
+/*.vjs-tech {
+  pointer-events: none;
+}*/
+.vjs-big-play-button {
+  pointer-events: none;
+  
+}
+
+.latest-video .vjs-big-play-button, .main-tv-new-index_video .vjs-big-play-button, .popular-video .vjs-big-play-button, .swiper-slide .vjs-big-play-button, .category-video .vjs-big-play-button, .frame-video .vjs-big-play-button{
+	display: none !important;
+}
+
+.playable .vjs-tech {
+  pointer-events: auto;
+}
+
+.playable .vjs-big-play-button {
+  pointer-events: auto;
+}
+
+.single-post blockquote.quote{font-size: 14px!important;}
+
+
+.news_author_photo{
+	position: relative;
+    float: right;
+    color: #929597;
+    padding-top: 12px;
+    padding-right: 10px;
+    font-size: 12px;
+}	
+
+.user_statement .user_avatar::before{
+	    background-color: rgba(0,145,211,0.35);
+}
+
+.actual_theme_body h4 a{
+	color:#14191d;
+}
+
+.short-news .sh-group-news{
+	margin-bottom:20px!important;
+}
+
+.footer{
+	height: auto!important;
+}
+
+.tv_item a{
+	padding: 0 5px;
+	font-weight: 900;
+	background-color: #cb260d;
+	color: #fff !important;
+	text-shadow 0 0 2px #fff
+}
+
+/*modal*/
+#loading-indicator {
+  position: absolute;
+  left: 47%;
+  top: 47%;
+  z-index: 100;
+}

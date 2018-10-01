@@ -1,0 +1,17 @@
+.t-table{
+    display: table;
+}
+.t-table .t-td{
+    display: table-cell;
+    vertical-align: top;
+    padding: 0 .25em;
+}
+.t-table .t-td.icons{
+    padding: .4em .25em;
+}
+.last-news-icon{
+    max-width: 1.75em;
+}
+.t-table .t-td .last-news-date{
+    color: rgba(0,0,0,.3);
+}

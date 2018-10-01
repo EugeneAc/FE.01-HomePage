@@ -1,0 +1,157 @@
+
+var cdnvrums = {config_host: 'rumstat.cdnvideo.ru'};
+var scr_name_re = '(stat\.rum)|(rumstat)\.cdnvideo\.ru';
+
+(function () {
+
+(function () {
+	var container_id = 'cdnvrums-'+guid();
+
+	function get_container() {
+		var doc = window.document;
+		var c = doc.getElementById(container_id);
+		if (!c) {
+			c = doc.createElement('div');
+			c.id = container_id;
+			doc.body.appendChild(c);
+		}
+		return c;
+	}
+
+	function create_script() {
+		var doc = window.document;
+		var c = get_container();
+		var s = doc.createElement('script');
+		s.type = 'text/javascript';
+		c.appendChild(s);
+		return s;
+	}
+
+	function get_proto(suggested_proto) {
+		if (suggested_proto == 'http' || suggested_proto == 'https') {
+			return suggested_proto;
+		}
+		var proto = window.location.protocol;
+		proto = proto ? proto : 'http:';
+		if (proto[proto.length-1] == ':') {
+			proto = proto.slice(0, -1);
+		}
+		return proto;
+	}
+
+	var app_params = getScriptParams(scr_name_re);
+
+	var sid = guid();
+	var conf = {
+		 sid: sid
+		,orig_sid: sid
+		,guid: guid
+		,port_suffix: (window.location.port ? ':'+window.location.port : '')
+		,create_script: create_script
+		,get_container: get_container
+		,logger: logger
+		,app_params: app_params
+		,proto: get_proto(app_params.shm)
+		,recollect_stat: load_main
+		,count: 0
+	};
+
+	function logger(m) { if (conf.do_log) console.log(m) }
+
+	function load_main(){
+		var s = create_script();
+
+		s.onload = function () {
+							cdnvrums.init(conf);
+							cdnvrums.check_hosts(['']);
+						};
+
+		//s.src = conf.proto+'://'+conf.stat_host+'.'+conf.domain+conf.port_suffix+'/probes/main.js?'+guid();
+		s.src = conf.proto+'://'+conf.sid+'-'+conf.rum_host_suffix+'.'+conf.domain+conf.port_suffix+'/probes/main.js?'+guid();
+	}
+
+	var s_conf = create_script();
+
+	s_conf.onload = function () {
+		Object.keys(cdnvrums.config)
+			.map(function(e){ conf[e] = cdnvrums.config[e] });
+		setTimeout(load_main, conf.delay);
+	};
+
+	s_conf.src = conf.proto+'://'+cdnvrums.config_host+conf.port_suffix+'/probes/config.js?'+guid();
+
+})();
+
+function guid() {
+	function s4() {
+		return Math.floor((1+Math.random())*0x10000).toString(16).substring(1);
+	}
+	return s4()+s4()+'-'+s4()+'-'+s4()+'-'+s4()+'-'+s4()+s4()+s4();
+}
+
+function getScriptParams(scr_name_re) {
+	//var myScript = document.currentScript;
+	var scripts = document.getElementsByTagName('script');
+	var myScript = toArray(scripts).filter(function(e){ return e.src.match(scr_name_re) != null; })[0];
+
+	var queryString = myScript ? myScript.src.replace(/^[^\?]+\??/,'') : '';
+
+	function parseQuery ( query ) {
+	   var Params = new Object ();
+	   if ( ! query ) return Params; // return empty object
+	   var Pairs = query.split(/[;&]/);
+	   for ( var i = 0; i < Pairs.length; i++ ) {
+	      var KeyVal = Pairs[i].split('=');
+	      if ( ! KeyVal || KeyVal.length != 2 ) continue;
+	      var key = unescape( KeyVal[0] );
+	      var val = decodeURIComponent( KeyVal[1] );
+	      val = val.replace(/\+/g, ' ');
+	      Params[key] = val;
+	   }
+	   return Params;
+	}
+	return parseQuery( queryString );
+};
+
+function toArray(lst) {
+	var arr = [];
+	for (var i = 0, ref = arr.length = lst.length; i < ref; i++) {
+		arr[i] = lst[i];
+	}
+	return arr;
+};
+
+})();
+
+
+function cdn_rum_diagnostic (stream, event, stat_collected) {
+	var conf = cdnvrums.get_conf();
+	var orig_sid = conf.orig_sid;
+	var ts = +new Date();
+	conf.sid = conf.guid();
+	conf.app_params.old_a = conf.app_params.a;
+	conf.app_params.a = 2;
+
+	Object.keys(conf.per_client[conf.app_params.c])
+		.map(function(e){ conf[e] = conf.per_client[conf.app_params.c][e] });
+	var extra_query_params = {
+		strm: stream
+		,ev: event
+		,osid: orig_sid
+	};
+	conf.extra_query_params = extra_query_params;
+	conf.stat_collected = stat_collected;
+	var s = conf.create_script();
+	s.onload = function () {
+		cdnvrums.init(conf);
+		cdnvrums.check_hosts(['']);
+	};
+	//s.src = conf.proto+'://'+conf.stat_host+'.'+conf.domain+conf.port_suffix+'/probes/main.js?'+conf.guid();
+	s.src = conf.proto+'://'+conf.sid+'-'+conf.rum_host_suffix+'.'+conf.domain+conf.port_suffix+'/probes/main.js?'+conf.guid();
+	var result = {
+		ts: ts
+		,sid: conf.sid
+		,orig_sid: orig_sid
+	};
+	return result;
+};

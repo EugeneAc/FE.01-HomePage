@@ -1,0 +1,492 @@
+var host = location.host,
+    popupNewsStatus = true;
+$(document).ready(function () {
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+    var widgetEvents = new Swiper($('.widget-calendar-events .swiper-container'), {
+        pagination: ".widget-calendar-fake-events .swiper-pagination",
+        paginationClickable: !0,
+        slidesPerView: 2,
+        direction: 'vertical',
+        spaceBetween: 30,
+        onInit: function () {
+            $(document).click(function (event) {
+                if ($(event.target).closest(".widget-calendar-fake-events").length) return;
+                $(".widget-calendar-fake-events").fadeOut();
+                event.stopPropagation();
+            });
+        }
+    });
+    var currLang = window.location.pathname.substr(1, 2);
+    if (currLang == 'ru') {
+        var daysOfWeek = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
+        var monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+    } else if (currLang == 'en') {
+        var daysOfWeek = ["MO", "TU", "WE", "TH", "FR", "SA", "Su"];
+        var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    } else if (currLang == 'kz') {
+        var daysOfWeek = ["ДС", "СС", "СР", "БС", "ЖМ", "СБ", "ЖК"];
+        var monthNames = ["Қаңтар", "Ақпан", "Наурыз", "Сәуір", "Мамыр", "Маусым", "Шілде", "Тамыз", "Қыркүйек", "Қазан", "Қараша", "Желтоқсан"];
+    } else {
+        var daysOfWeek = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
+        var monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+    }
+
+    var widgetCalEvents = $('.widget-calendar-events');
+    if (widgetCalEvents.length) {
+        var widgetCal, widgetCalSelect, widgetDatePicker;
+
+        widgetCal = $('.calendar-daterangepicker', widgetCalEvents);
+
+        widgetCal.daterangepicker({
+            timePicker: true,
+            singleDatePicker: true,
+            autoUpdateInput: true,
+            opens: 'center',
+            autoApply: true,
+            parentEl: '.widget-calendar-events',
+            locale: {
+                firstDay: 1,
+                format: 'DD.MM.YYYY',
+                "daysOfWeek": daysOfWeek,
+                "monthNames": monthNames
+            }
+        })
+        widgetCalSelect = widgetCal.data('daterangepicker');
+        widgetDatePicker = $('.daterangepicker', widgetCalEvents);
+
+        widgetDatePicker.addClass('widget-daterangepicker');
+        widgetCalSelect.show();
+        $('.calendar-table', widgetDatePicker).on('click', 'td', function () {
+            setTimeout(function () {
+                $('.widget-calendar-fake-events').fadeIn();
+                widgetEvents.update();
+            }, 100);
+        });
+    }
+    /////////////////////////////////////////////////////////////////
+    if (window.location.href.split('/').length < 5) {
+        thClickCycle();
+        /////////////////////////////////////////////////////////////////
+        var meteoVal = $('.meteo-value');
+        var onloadCity = $('.meteo-city').attr('data-value');
+        if (onloadCity != 'undefined') {
+            $.ajax({
+                url: "https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22" + onloadCity + "%2C%20kz%22)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys",
+                dataType: 'jsonp',
+                success: function (json) {
+                    if (Math.round((json.query.results.channel.item.condition.temp - 32) / 1.8) > 0) {
+                        meteoVal.text('+' + Math.round((json.query.results.channel.item.condition.temp - 32) / 1.8) + "°");
+                    } else {
+                        meteoVal.text(Math.round((json.query.results.channel.item.condition.temp - 32) / 1.8) + "°");
+                    }
+                    var cond = json.query.results.channel.item.condition.code;
+                    var condText = json.query.results.channel.item.condition.text;
+                    setMeteoClass(cond, condText);
+                },
+            });
+        }
+    }
+
+    $('.meteo').on('click', '.meteo-places', function () {
+        var city = $(this).attr('data-value');
+        $.ajax({
+            url: "https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22" + city + "%2C%20kz%22)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys",
+            dataType: 'jsonp',
+            success: function (json) {
+                $('.meteo-city').attr('data-value', city)
+                if (Math.round((json.query.results.channel.item.condition.temp - 32) / 1.8) > 0) {
+                    meteoVal.text('+' + Math.round((json.query.results.channel.item.condition.temp - 32) / 1.8) + "°");
+                } else {
+                    meteoVal.text(Math.round((json.query.results.channel.item.condition.temp - 32) / 1.8) + "°");
+                }
+                var cond = json.query.results.channel.item.condition.code;
+                var condText = json.query.results.channel.item.condition.text;
+                setMeteoClass(cond, condText);
+
+                var dataMap = {};
+                var lang = $('.meteo-city').attr('data-lang');
+                token = $('.meteo-city').attr('data-tok');
+                dataMap['id'] = $('.meteo-city').attr('data-value');
+                dataMap['_token'] = token;
+                $.ajax({
+                    type: "POST",
+                    data: dataMap,
+                    url: 'https://' + host + "/" + lang + "/meteo_session",
+
+                    success: function (response) {
+
+                    }
+
+                });
+
+            },
+        });
+    });
+
+    $('.job-offer').on('click', 'button', function () {
+        var thisForm = $(this).closest('.job-offer');
+
+        var cur_locale = window.location.pathname.substr(1, 2);
+        var dataMap = {};
+        var success = true;
+        var ids = ['surname', 'name', 'cv', 'mobile', 'email', 'vacancy'];
+
+        thisForm.each(function () {
+            for (var i = 0; i < ids.length; i++) {
+                if ($('#' + ids[i] + '', thisForm).val() == '') {
+                    $('#' + ids[i] + '', thisForm).addClass("form-control_error");
+                    success = false;
+                } else {
+                    if (ids[i] == 'email') {
+                        if (validateEmail($('#' + ids[i] + '', thisForm).val())) {
+                            $('#' + ids[i] + '', thisForm).removeClass("form-control_error");
+                        } else {
+                            $('#' + ids[i] + '', thisForm).addClass("form-control_error");
+                            success = false;
+                        }
+                    }
+                    else if (ids[i] == 'mobile') {
+                        if ($.isNumeric($('#' + ids[i] + '', thisForm).val())) {
+                            $('#' + ids[i] + '', thisForm).removeClass("form-control_error");
+                        } else {
+                            $('#' + ids[i] + '', thisForm).addClass("form-control_error");
+                            success = false;
+                        }
+                    } else {
+                        $('#' + ids[i] + '', thisForm).removeClass("form-control_error");
+                    }
+                }
+
+            }
+        });
+        if (success == true && $('#g-recaptcha-response', thisForm).val() != '') {
+
+            var form = thisForm[0]; // high importance!, here you need change "yourformname" with the name of your form
+            var formdata = new FormData(form); // high importance!
+
+            $.ajax({
+                async: true,
+                type: "POST",
+                contentType: false, // high importance!
+                data: formdata, // high importance!
+                processData: false, // high importance!
+                url: 'https:://' + host + "/" + cur_locale + "/send_cv_offer",
+
+                success: function (response) {
+                    $('.collapseSuccess').show();
+                    setTimeout(function () {
+                        $('.collapseVakansiyi').removeClass('in');
+                        $('.collapseSuccess').hide()
+                    }, 2000);
+
+                },
+                error: function (request, status, error) {
+
+                }
+
+            });
+        }
+
+    });
+
+    ////////////////////////////////////////////////////////////////
+    if ($('.promo-and-translation').length && $('#promo-video').length) {
+        jwplayer('promo-video').on('complete', tv_promo);
+    }
+    $(".fancybox").fancybox();
+    $('.charity-fees-info a').click(benef_click);
+    $('.banner a').click(banner_click);
+    $('.video-js').bind('contextmenu', function () {
+        return false;
+    });
+    $('.main-tv-new-index_video').bind('contextmenu', function () {
+        return false;
+    });
+    $('.surveyVar').click(function () {
+        if ($(this).is(':checked')) {
+            $('#surveySend').removeAttr('disabled');
+        }
+    });
+    // $('.popup_link a').on('click',pop_up_news);
+    // $('.main-news:not(.main-news_mob) a').on('click',pop_up_news);
+    // $('.modal-content').on('click','.modal-butt , #rel-click , #spec-link',pop_up_news);
+    $('.submit-answer-button').on('click', survey);
+    $('.datefilter').on('hide.daterangepicker', function () {
+        $('#cal-filter').submit();
+    });
+    if ($('.widget-daterangepicker').length > 0) {
+        var dateCalendar = $('.calendar');
+        dateCalendar.on('click', 'td', b_calendar);
+        dateCalendar.on('click.daterangepicker', '.prev , .next', thClickCycle);
+    }
+});
+
+function setMeteoClass(cond, condText) {
+    if (cond == 5 || cond == 7 || cond == 13 || cond == 14 || cond == 18 || cond == 15 || cond == 16 || cond == 14 || cond == 41 || cond == 42 || cond == 43 || cond == 46 || condText == 'Snow') {
+        $('#meteo-cond').attr('class', 'icon-snow-heavy-inv');
+    }
+    if (cond == 32 || cond == 36 || cond == 34 || condText == 'Sunny') {
+        $('#meteo-cond').attr('class', 'icon-sun-inv');
+    }
+    if (cond == 33 || cond == 31) {
+        $('#meteo-cond').attr('class', 'icon-moon-inv');
+    }
+    if (cond == 30 && condText == 'Partly Cloudy') {
+        $('#meteo-cond').attr('class', 'icon-cloud-sun-inv');
+    }
+    if (cond == 29 && condText == 'Partly Cloudy') {
+        $('#meteo-cond').attr('class', 'icon-cloud-moon-inv');
+    }
+    if (cond == 26 || cond == 28 || condText == 'Cloudy') {
+        $('#meteo-cond').attr('class', 'icon-cloud-inv');
+    }
+    if (cond == 11 || cond == 12 || cond == 14 || cond == 40 || condText == 'Showers') {
+        $('#meteo-cond').attr('class', 'icon-rain-inv');
+    }
+}
+
+function thClickCycle() {
+    var cur_locale = window.location.pathname.substr(1, 2);
+    var thisMonthandYear = $('.calendar.left th[colspan="5"]').text();
+    var dataMap = {};
+    token = $('input[name=_token]').val();
+    dataMap['id'] = thisMonthandYear;
+    dataMap['_token'] = token;
+    $.ajax({
+        type: "POST",
+        data: dataMap,
+        url: 'https://' + host + "/" + cur_locale + "/b_calendar_script",
+        success: function (response) {
+            $("#script").html(response);
+            genScript();
+        }
+    });
+}
+
+function b_calendar() {
+    genScript();
+    var cur_locale = window.location.pathname.substr(1, 2);
+    var cellValue = $(this).text();
+    var currentDate = cellValue + " " + $('.calendar.left th[colspan="5"]').text();
+    token = $('input[name=_token]').val();
+    $("wg-events").empty();
+    var dataMap = {};
+    dataMap['id'] = currentDate;
+    dataMap['_token'] = token;
+    console.log(dataMap);
+    $.ajax({
+        type: "POST",
+        data: dataMap,
+        url: 'https://' + host + "/" + cur_locale + "/b_calendar",
+        success: function (response) {
+            $("#wg-events").html(response);
+            widgetEvents.update();
+            $('.widget-calendar-fake-events').fadeIn();
+
+        }
+
+    });
+}
+
+function validateEmail(email) {
+    var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(email);
+}
+
+function banner_click(event) {
+    event.stopPropagation();
+    var host = location.host;
+    var dataMap = {};
+    dataMap['_token'] = $(this).attr('data-tok');
+    dataMap['id'] = $(this).attr('data-id');
+
+    $.ajax({
+        type: "POST",
+        data: dataMap,
+        url: 'https://' + host + "/ru/banner_count",
+        success: function (msg) {
+
+        }
+
+    });
+}
+
+function tv_promo() {
+    $.ajax({
+        type: "POST",
+        url: "http://" + host + "/ru/promo_session",
+        cache: false
+    });
+}
+
+function benef_click(event) {
+    event.stopPropagation();
+    var _self = $(this);
+    var host = location.host;
+    var dataMap = {};
+    dataMap['_token'] = _self.attr('data-tok');
+    dataMap['id'] = _self.attr('data-id');
+
+    $.ajax({
+        type: "POST",
+        data: dataMap,
+        url: 'https://' + host + "/ru/benef_click",
+        success: function (msg) {
+
+        }
+
+    });
+}
+
+$('#myModal').on('hidden.bs.modal', function () {
+    $('.main .container .fake-close , .main .container .fake-button-prev , .main .container .fake-button-next').remove();
+});
+
+function pop_up_news(e) {
+    //e.stopPropagation();
+    var _self = $(this);
+    if (popupNewsStatus) {
+        var thHref = _self.attr('href');
+        _self.removeAttr('href');
+    }
+    var host = location.host;
+    var dataMap = {};
+    dataMap['_token'] = _self.attr('data-tok');
+    dataMap['id'] = _self.attr('data-id');
+    var lang = _self.attr('data-lang');
+    $('#loading-indicator').show();
+    $('#modal_cont').empty();
+    $('.main .container .fake-close , .main .container .fake-button-prev , .main .container .fake-button-next').remove();
+
+
+    $.ajax({
+        type: "POST",
+        data: dataMap,
+        cache: false,
+        url: 'https://' + host + "/" + lang + "/pop_up_news",
+
+        success: function (response) {
+            $('#loading-indicator').hide();
+            $("#modal_cont").html(response);
+
+            $('.single-post .item-content p').find('img').addClass('img-responsive').css({
+                'margin': '10px 0',
+                'width': '100%',
+                'height': 'auto'
+            });
+            var modalClose = $('.modal-content .close'),
+                modalPrev = $('.modal-content .button-prev'),
+                modalNext = $('.modal-content .button-next');
+
+            modalClose.clone().removeClass().addClass('fake-close').appendTo('.main .container');
+            modalPrev.clone().removeClass().addClass('arrow-button fake-button-prev').appendTo('.main .container');
+            modalNext.clone().removeClass().addClass('arrow-button fake-button-next').appendTo('.main .container');
+
+            var modalFakeClose = $('.main .container .fake-close'),
+                modalFakePrev = $('.main .container .fake-button-prev'),
+                modalFakeNext = $('.main .container .fake-button-next');
+
+            modalFakeClose.on('click', function () {
+                modalClose.click();
+            });
+            modalFakePrev.on('click', function () {
+                modalPrev.click();
+            });
+            modalFakeNext.on('click', function () {
+                modalNext.click();
+            });
+            var modalDistanceLeft = $('.modal-single-post').offset().left;
+            modalFakePrev.css({'left': modalDistanceLeft - 50});
+            var modalWidth = $('.modal-single-post').width();
+            modalFakeNext.css({'left': modalDistanceLeft + modalWidth});
+            modalFakeClose.css({'left': modalDistanceLeft + modalWidth - 20});
+
+            var modal = $('.modal'),
+                mRight = $('.modal-right'),
+                mLeft = $('.modal-left');
+
+            if (mLeft.height() < mRight.height()) {
+                var mLeftHeight = mLeft.height();
+                mRight.css({'height': mLeftHeight, 'scroll': 'auto'});
+                var status = false;
+
+                modal.on('scroll', function () {
+                    if (!status) {
+                        mLeftHeight = mLeft.height();
+                        mRight.css({'height': mLeftHeight});
+                    }
+                });
+
+            } else {
+                var mItems = $('.modal-right .actual-theme-items');
+                var mItemsHeight = mItems.height();
+
+
+                var status = false;
+
+                var koeffetsent, modEmpty;
+                modal.on('scroll', function () {
+                    if (!status) {
+                        var mLeftHeight = mLeft.height();
+
+                        mRight.css({'height': mLeftHeight});
+
+                        modEmpty = mLeftHeight - 69 - mItemsHeight;
+                        koeffetsent = mLeftHeight / modEmpty;
+
+                        status = true;
+                    }
+                    var modalScrollTop = modal.scrollTop();
+
+                    mItems.css({
+                        'position': 'absolute',
+                        'padding-right': '30px',
+                        'top': (modalScrollTop / koeffetsent) + 69 + 'px'
+                    });
+                });
+            }
+
+            if (popupNewsStatus) {
+                _self.attr('href', thHref);
+                popupNewsStatus = false;
+            }
+        }
+    });
+
+}
+
+var onloadCallback = function () {
+    $('.collapseVakansiyi form').each(function (index) {
+        grecaptcha.render('recaptcha' + index, {'sitekey': '6LcuexUUAAAAAMFg_w4mS2_9E_pMXkxMTPh6quip'});
+    });
+};
+
+function survey(e) {
+    e.preventDefault();
+    var ch = $('.interview-question-list').find('input:radio:checked');
+    var host = location.host;
+    var dataMap = {};
+    token = $('input[name=_token]').val();
+    lang = $('input[name=lang]').val();
+
+    dataMap['id'] = ch.val();
+    dataMap['_token'] = token;
+    $.ajax({
+        type: "POST",
+        data: dataMap,
+        cache: false,
+        url: 'https://' + host + "/" + lang + "/answer_poll",
+        success: function (response) {
+            $('.interview-answers').html(response);
+        }
+
+    });
+
+}
+
+
+
